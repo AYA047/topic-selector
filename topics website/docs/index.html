@@ -1,0 +1,492 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Topic & Presenter Picker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --beige: #F6F0E7;
+      --beige-deep: #EEEAD7;
+      --sage: #A8B8A0;
+      --sage-dark: #757D6F;
+      --sage-pale: #E4EBDD;
+      --pink: #6D0808;
+      --pink-pale: #450C3F;
+      --ink: #450C3F;
+      --muted: #72766E;
+      --line: #DCD7CC;
+      --white: #FFFEFB;
+      --danger: #A54F54;
+      color-scheme: light;
+    }
+    * { box-sizing: border-box; }
+    @font-face {
+    font-family: "MyCustomFont";
+    src: url("./fonts/AvelineEleganzaRegular-KVqeA.otf") format("opentype");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+    body {
+      margin: 0;
+      background: url("./alexander-nedviga-SY33_ih3piA-unsplash.jpg") center / cover no-repeat fixed;
+      color: var(--ink);
+      font-family: "DM Sans", Arial, sans-serif;
+      line-height: 1.5;
+    }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    button:focus-visible, input:focus-visible { outline: 3px solid var(--sage-dark); outline-offset: 3px; }
+    .page { max-width: 1180px; margin: 0 auto; padding: 30px 24px 48px; }
+    header { padding: 18px 0 26px; }
+    .eyebrow { color: var(--sage-dark); text-transform: uppercase; letter-spacing: .16em; font-size: .75rem; font-weight: 700; }
+    h1 { font: 700 clamp(2.25rem, 5vw, 3.8rem)/1.08 "Playfair Display", Georgia, serif; letter-spacing: -.04em; margin: 10px 0 12px; }
+    header p { color: var(--muted); max-width: 620px; margin: 0; font-size: 1.04rem; }
+    main { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(290px, .85fr); gap: 22px; align-items: start; }
+    .panel { background: var(--white); border: 1px solid var(--line); border-radius: 24px; padding: clamp(18px, 3vw, 30px); box-shadow: 0 10px 30px rgba(64, 56, 43, .045); }
+    .stage { min-height: 520px; display: flex; flex-direction: column; align-items: stretch; }
+    .stage-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .step-pill { border-radius: 999px; padding: 7px 12px; background: var(--sage-pale); color: var(--sage-dark); font-size: .78rem; font-weight: 700; white-space: nowrap; }
+    h2 { font: 700 1.5rem "Playfair Display", Georgia, serif; margin: 0; }
+    .stage-description { color: var(--muted); margin: 8px 0 24px; }
+    .picker-window {
+      min-height: 225px; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; position: relative; overflow: hidden; border-radius: 20px; padding: 26px 18px;
+      background: linear-gradient(145deg, #F8F4EC 0%, #F1E9DC 100%); border: 1px solid #E5DCCF;
+    }
+    .picker-window::before, .picker-window::after { content: ""; position: absolute; left: 12%; right: 12%; height: 1px; background: rgba(82,104,79,.18); }
+    .picker-window::before { top: 28%; }
+    .picker-window::after { bottom: 28%; }
+    .picker-kicker { text-transform: uppercase; letter-spacing: .18em; font-size: .7rem; font-weight: 700; color: var(--sage-dark); margin-bottom: 14px; position: relative; z-index: 1; }
+    .rolling-name { font-size: clamp(1.9rem, 4.5vw, 3.25rem); line-height: 1.15; font-weight: 800; letter-spacing: -.045em; color: #450C3F; overflow-wrap: anywhere; position: relative; z-index: 1; max-width: 100%; }
+    .rolling-name.is-rolling { animation: softPulse .18s ease-in-out infinite alternate; }
+    .rolling-name.is-winner { animation: winnerIn .55s cubic-bezier(.2,.8,.2,1) both; }
+    @keyframes softPulse { from { transform: translateY(-3px); opacity: .65; } to { transform: translateY(3px); opacity: 1; } }
+    @keyframes winnerIn { 0% { transform: translateY(18px) scale(.96); opacity: 0; } 70% { transform: translateY(-3px) scale(1.015); opacity: 1; } 100% { transform: translateY(0) scale(1); opacity: 1; } }
+    .picker-hint { color: var(--muted); font-size: .9rem; margin-top: 17px; position: relative; z-index: 1; }
+    .result-note { min-height: 28px; text-align: center; margin: 16px 0 8px; font-weight: 600; }
+    .result-note small { display: block; color: var(--muted); font-weight: 400; font-size: .88rem; margin-top: 3px; }
+    .actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 12px; }
+    .btn { border: 1px solid var(--line); border-radius: 13px; padding: 12px 18px; background: var(--white); color: var(--beige); font-weight: 700; transition: transform .15s ease, background .15s ease; }
+    .btn:hover:not(:disabled) { transform: translateY(-1px); }
+    .btn:disabled { opacity: .48; cursor: not-allowed; }
+    .btn-primary { background: var(--sage-dark); color: white; border-color: var(--sage-dark); padding: 13px 24px; }
+    .btn-primary:hover:not(:disabled) { background: #40543D; }
+    .btn-pink { background: var(--pink-pale); border-color: #E9C9CC; }
+    .hidden { display: none !important; }
+    .recap { margin-top: 18px; padding: 15px; border-radius: 16px; background: var(--pink-pale); color: #FFFFFF; text-align: center; }
+    .recap, .recap * { color: #FFFFFF !important; }
+    .recap-label { font-size: .72rem; text-transform: uppercase; letter-spacing: .14em; font-weight: 700; }
+    .recap strong { display: block; font-size: 1.08rem; margin-top: 5px; }
+    .manage + .manage { margin-top: 26px; padding-top: 24px; border-top: 1px solid var(--line); }
+    .manage-heading { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; }
+    h3 { font: 700 1.25rem "Playfair Display", Georgia, serif; margin: 0; }
+    .count { border-radius: 999px; padding: 4px 9px; font-size: .78rem; background: var(--sage-pale); color: var(--sage-dark); font-weight: 700; }
+    .add { display: flex; gap: 8px; margin-bottom: 9px; }
+    .add input { min-width: 0; flex: 1; border: 1px solid var(--line); border-radius: 12px; background: #FBF8F2; padding: 11px 12px; color: var(--ink); }
+    .add .btn { padding: 10px 15px; }
+    .err { min-height: 1.2em; margin: 4px 0 8px; color: var(--danger); font-size: .88rem; }
+    .item-list { list-style: none; padding: 0; margin: 0; max-height: 230px; overflow: auto; }
+    .item-list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 2px; border-bottom: 1px solid #EEE9E0; }
+    .item-list li span { overflow-wrap: anywhere; }
+    .remove-btn { border: 0; background: transparent; color: var(--muted); padding: 4px 7px; border-radius: 8px; font-size: .82rem; }
+    .remove-btn:hover { color: var(--danger); background: var(--pink-pale); }
+    .empty { color: var(--muted); font-size: .9rem; padding: 12px 2px; }
+    .option { display: flex; align-items: flex-start; gap: 9px; color: var(--muted); font-size: .88rem; margin: 12px 0 10px; }
+    .option input { accent-color: var(--sage-dark); margin-top: 4px; }
+    footer { text-align: center; color: var(--muted); font-size: .82rem; padding: 25px 0 0; }
+
+    .top-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+    .top-actions .btn { min-width: 150px; }
+    .modal-backdrop {
+      position: fixed; inset: 0; z-index: 20; padding: 22px;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(28, 30, 25, .42); backdrop-filter: blur(4px);
+    }
+    /* Keep closed dialogs hidden despite the flex layout above. */
+    .modal-backdrop.hidden { display: none !important; }
+    .modal { width: min(100%, 560px); max-height: min(82vh, 760px); overflow: auto; }
+    .modal-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 22px; }
+    .modal-heading h2 { margin-top: 5px; }
+    .close-modal { flex: 0 0 auto; width: 38px; height: 38px; border: 1px solid var(--line); border-radius: 50%; background: var(--beige); color: var(--ink); font-size: 1.5rem; line-height: 1; }
+    .modal-list-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 18px 0 8px; }
+    .modal-list-heading h3 { font-size: 1.05rem; }
+    .modal .item-list { max-height: 260px; }
+
+    /* Cinematic opening title */
+    .intro-screen {
+      position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center;
+      overflow: hidden; background: url("./alexander-nedviga-SY33_ih3piA-unsplash.jpg") center / cover no-repeat; background-color: var(--beige); transition: opacity .7s ease, visibility .7s ease;
+    }
+    .intro-screen::before { content: ""; position: absolute; inset: 0; background: rgba(20, 18, 22, .22); }
+    .intro-title { z-index: 1; color: #FFFEFB; text-shadow: 0 3px 22px rgba(0,0,0,.28); }
+    .intro-screen.is-leaving { opacity: 0; visibility: hidden; pointer-events: none; }
+    .intro-title {
+      display: grid; position: relative; width: min(92vw, 1100px); color: var(--ink);
+      font: 700 clamp(2rem, 6vw, 5rem)/1.05 "Playfair Display", Georgia, serif;
+      letter-spacing: -.045em; text-align: center; padding: 0 20px;
+    }
+    .intro-title span { grid-area: 1 / 1; display: block; white-space: normal; animation-duration: 2.8s; animation-fill-mode: both; }
+    .intro-title .intro-top { animation-name: splitTop; clip-path: inset(0 0 50% 0); }
+    .intro-title .intro-bottom { animation-name: splitBottom; clip-path: inset(50% 0 0 0); }
+    @keyframes splitTop { 0% { opacity: 0; transform: translateY(34px); clip-path: inset(0 0 50% 0); } 18% { opacity: 1; transform: translateY(0); } 76% { opacity: 1; transform: translateY(0); clip-path: inset(0 0 50% 0); } 100% { opacity: 0; transform: translateY(-28px); clip-path: inset(0 0 100% 0); } }
+    @keyframes splitBottom { 0% { opacity: 0; transform: translateY(-34px); clip-path: inset(50% 0 0 0); } 18% { opacity: 1; transform: translateY(0); } 76% { opacity: 1; transform: translateY(0); clip-path: inset(50% 0 0 0); } 100% { opacity: 0; transform: translateY(28px); clip-path: inset(100% 0 0 0); } }
+
+    /* Full-page winner reveal: the overlay stays crisp while the page behind blurs */
+    .winner-overlay {
+      position: fixed; inset: 0; z-index: 90; display: flex; align-items: center; justify-content: center;
+      padding: 24px; background: rgba(246, 240, 231, .40); backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px); opacity: 0; visibility: hidden;
+      transition: opacity .75s ease, visibility .75s ease;
+    }
+    .winner-overlay.is-visible { opacity: 1; visibility: visible; }
+    .winner-overlay.is-fading { opacity: 0; }
+    .winner-content { max-width: 90vw; text-align: center; }
+    .winner-label { display: none; }
+    .winner-name { color: var(--ink); font: 800 clamp(2.5rem, 8vw, 6.5rem)/1.04 "DM Sans", sans-serif; letter-spacing: -.055em; overflow-wrap: anywhere; animation: winnerZoom .85s cubic-bezier(.16, 1, .3, 1) both; }
+    .winner-overlay.is-fading .winner-name { animation: winnerFade .7s ease both; }
+    @keyframes winnerZoom { 0% { opacity: 0; transform: scale(.45); filter: blur(8px); } 65% { opacity: 1; transform: scale(1.07); filter: blur(0); } 100% { opacity: 1; transform: scale(1); filter: blur(0); } }
+    @keyframes winnerFade { to { opacity: 0; transform: scale(1.12); filter: blur(5px); } }
+
+    /* Rapid vertical reel movement */
+    .rolling-name.is-rolling { animation: reelJitter .11s linear infinite; filter: blur(.45px); }
+    @keyframes reelJitter { 0% { transform: translateY(-7px); } 50% { transform: translateY(7px); } 100% { transform: translateY(-7px); } }
+    .page { transition: filter .35s ease; }
+
+    @media (max-width: 820px) { main { grid-template-columns: 1fr; } .stage { min-height: 480px; } }
+    @media (max-width: 480px) { .page { padding: 18px 14px 32px; } header { padding-top: 10px; } .panel { border-radius: 19px; } .stage { min-height: 460px; } .picker-window { min-height: 210px; } .stage-top { align-items: flex-start; flex-direction: column; } .modal-backdrop { padding: 12px; } .top-actions .btn { flex: 1; min-width: 0; } }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+
+    /* Layout refinements: centered heading, compact top-right controls, no picker card */
+    .page { position: relative; padding-top: 30px; }
+    header {
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+      text-align: center; width: 100%; margin: 0 auto; padding: 55px 0 26px; gap: 8px;
+    }
+    header h1 { margin: 10px 0; }
+    header p { margin: 0 auto; }
+    .top-actions {
+      position: absolute; top: 12px; right: 24px; left: auto; z-index: 5;
+      display: flex; flex-wrap: wrap; gap: 6px; margin: 0;
+    }
+    .top-actions .btn { min-width: 0; padding: 6px 10px; font-size: 12px; border-radius: 9px; }
+    main { display: grid; grid-template-columns: minmax(0, 760px); justify-content: center; gap: 0; }
+    .stage.panel { background: transparent; border: none; box-shadow: none; padding: 20px; }
+    .picker-window { background: transparent; border: none; box-shadow: none; border-radius: 0; }
+    .picker-window::before, .picker-window::after { display: none; }
+    @media (max-width: 480px) {
+      .page { padding: 18px 14px 32px; }
+      .top-actions { top: 8px; right: 14px; left: auto; gap: 5px; }
+      .top-actions .btn { flex: 0 1 auto; min-width: 0; padding: 6px 8px; font-size: 11px; }
+      header { padding-top: 65px; }
+      .stage.panel { padding: 12px 0; }
+    }
+    /* Requested final styling */
+    .stage-top { justify-content: center; text-align: center; }
+    #stageTitle { width: 100%; text-align: center; }
+
+
+    /* Final polish: editorial, warm, and deliberately restrained */
+    :root {
+      --beige: #F6F0E7;
+      --beige-deep: #EDE4D7;
+      --sage: #A8B8A0;
+      --sage-dark: #596B55;
+      --sage-pale: #E5EBE0;
+      --pink: #6D0808;
+      --pink-pale: #F0DDE0;
+      --plum: #450C3F;
+      --ink: #450C3F;
+      --muted: #6D6B68;
+      --line: #E2D8CC;
+      --white: #FFFCF7;
+      --danger: #A54F54;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      background-image: linear-gradient(135deg, rgba(246,240,231,.40), rgba(238,232,218,.25)),
+        url("./alexander-nedviga-SY33_ih3piA-unsplash.jpg");
+      background-position: center;
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+    }
+    .page { max-width: 1080px; padding-bottom: 56px; }
+    header { padding-top: 62px; padding-bottom: 32px; }
+    .eyebrow {
+      color: var(--sage-dark);
+      font-size: .69rem;
+      letter-spacing: .22em;
+    }
+    header .eyebrow::before, header .eyebrow::after {
+      content: "âœ³";
+      display: inline-block;
+      margin: 0 12px;
+      color: #B58B91;
+      font-size: .8rem;
+      vertical-align: 1px;
+    }
+    h1 {
+      color: var(--ink);
+      font-size: clamp(2.35rem, 6vw, 4.65rem);
+      letter-spacing: -.055em;
+      line-height: 1.04;
+      text-wrap: balance;
+    }
+    header p {
+      color: #625D60;
+      font-size: 1rem;
+      letter-spacing: .01em;
+    }
+    .top-actions { top: 18px; }
+    .btn {
+      color: var(--ink);
+      border: 1px solid rgba(76,66,69,.13);
+      background: rgba(255,252,247,.84);
+      box-shadow: 0 3px 12px rgba(56,45,59,.04);
+      border-radius: 999px;
+      padding: 11px 19px;
+      font-weight: 600;
+      transition: transform .2s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease;
+    }
+    .btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(56,45,59,.10);
+    }
+    .btn-primary {
+      color: #FFFCF7;
+      background: var(--sage-dark);
+      border-color: var(--sage-dark);
+      box-shadow: 0 5px 16px rgba(69,87,64,.16);
+    }
+    .btn-primary:hover:not(:disabled) { background: #465842; }
+    .btn-pink {
+      color: #FFFCF7;
+      background: var(--plum);
+      border-color: var(--plum);
+      box-shadow: 0 5px 16px rgba(69,12,63,.14);
+    }
+    .btn-pink:hover:not(:disabled) { background: #35092F; border-color: #35092F; }
+    .top-actions .btn { font-size: .76rem; padding: 8px 13px; }
+    .stage.panel { min-height: 0; padding: 18px 20px 24px; }
+    .stage-top { margin-bottom: 6px; }
+    h2 { color: var(--ink); font-size: clamp(1.55rem, 3vw, 2rem); letter-spacing: -.025em; }
+    .picker-window {
+      min-height: 280px;
+      padding: 44px 22px;
+      isolation: isolate;
+    }
+    .picker-window::before {
+      display: block;
+      content: "";
+      position: absolute;
+      z-index: -1;
+      width: min(76vw, 520px);
+      height: 230px;
+      left: 50%; right: auto; top: 50%;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      background: radial-gradient(ellipse, rgba(221,203,190,.55) 0%, rgba(229,222,207,.20) 54%, transparent 75%);
+      filter: blur(8px);
+    }
+    .picker-window::after {
+      display: block;
+      content: "";
+      position: absolute;
+      bottom: 21%; left: calc(50% - 25px); right: auto;
+      width: 50px; height: 1px;
+      background: #B7A3A0;
+      opacity: .8;
+    }
+    .picker-kicker { color: var(--sage-dark); letter-spacing: .24em; font-size: .68rem; margin-bottom: 20px; }
+    .rolling-name {
+      color: var(--ink);
+      font-size: clamp(2.1rem, 5.8vw, 4.1rem);
+      line-height: 1.12;
+      letter-spacing: -.045em;
+      font-weight: 700;
+      max-width: min(100%, 780px);
+      text-wrap: balance;
+      overflow-wrap: break-word;
+      hyphens: auto;
+    }
+    .picker-hint { color: #70696A; font-size: .9rem; margin-top: 28px; }
+    .actions { margin-top: 18px; gap: 12px; }
+    .actions .btn { min-width: 174px; }
+    .result-note { color: var(--ink); margin: 20px 0 4px; font-weight: 600; }
+    .result-note small { color: var(--muted); font-weight: 400; }
+    .recap {
+      margin: 24px auto 0;
+      width: min(100%, 520px);
+      padding: 22px 24px;
+      border: 1px solid rgba(255,255,255,.13);
+      border-radius: 22px;
+      background: linear-gradient(135deg, #493B4B, #66515F);
+      box-shadow: 0 14px 36px rgba(56,45,59,.15);
+      color: #FFFCF7;
+    }
+    .recap-label { color: #E8C7CE; letter-spacing: .2em; }
+    .recap strong { font-size: 1.18rem; line-height: 1.4; overflow-wrap: anywhere; }
+    .recap span { color: #E6D9DC; font-size: .85rem; }
+    .modal-backdrop { background: rgba(37,31,38,.45); backdrop-filter: blur(9px); -webkit-backdrop-filter: blur(9px); }
+    .modal.panel {
+      background: rgba(255,252,247,.98);
+      border-color: rgba(255,255,255,.7);
+      border-radius: 26px;
+      box-shadow: 0 28px 90px rgba(28,23,30,.24);
+    }
+    .modal-heading h2 { margin-top: 7px; }
+    .close-modal { transition: background .18s ease, transform .18s ease; }
+    .close-modal:hover { background: var(--pink-pale); transform: rotate(90deg); }
+    .add input {
+      background: #FBF8F2;
+      border-color: #DED4C9;
+      border-radius: 13px;
+      padding: 12px 14px;
+      transition: border-color .18s ease, box-shadow .18s ease;
+    }
+    .add input:focus { border-color: var(--sage-dark); box-shadow: 0 0 0 4px rgba(89,107,85,.10); outline: none; }
+    .count { background: var(--sage-pale); color: var(--sage-dark); }
+    .item-list li { padding: 12px 4px; border-color: #EEE7DE; }
+    .item-list li span { color: var(--ink); }
+    .remove-btn { border-radius: 999px; padding: 6px 10px; transition: color .18s ease, background .18s ease; }
+    .remove-btn:hover { color: #8D3D49; background: var(--pink-pale); }
+    .option { line-height: 1.5; }
+    .winner-overlay {
+      background: rgba(246,240,231,.20);
+      backdrop-filter: blur(16px) saturate(.8);
+      -webkit-backdrop-filter: blur(16px) saturate(.8);
+    }
+    .winner-content { width: min(100%, 1000px); }
+    .winner-label {
+      display: block;
+      color: var(--sage-dark);
+      font-size: .72rem;
+      font-weight: 700;
+      letter-spacing: .25em;
+      text-transform: uppercase;
+      margin-bottom: 22px;
+    }
+    .winner-name {
+      color: var(--ink);
+      font-family: "Playfair Display", Georgia, serif;
+      font-weight: 700;
+      font-size: clamp(2.8rem, 9vw, 7.2rem);
+      letter-spacing: -.045em;
+      line-height: 1.08;
+      text-wrap: balance;
+      text-shadow: 0 8px 34px rgba(56,45,59,.09);
+    }
+    .intro-title { color: #450C3F; }
+    .intro-title span { text-shadow: 0 3px 22px rgba(255,252,247,.24); }
+    .intro-screen::before { background: rgba(30,24,31,.12); }
+    @media (max-width: 600px) {
+      header { padding-top: 76px; padding-bottom: 20px; }
+      h1 { font-size: clamp(2.2rem, 10vw, 3.4rem); }
+      header .eyebrow::before, header .eyebrow::after { margin: 0 6px; }
+      .top-actions { top: 12px; right: 12px; left: 12px; justify-content: center; }
+      .top-actions .btn { flex: 0 1 auto; font-size: .72rem; }
+      .stage.panel { padding: 12px 0 22px; }
+      .picker-window { min-height: 250px; padding: 34px 12px; }
+      .picker-hint { max-width: 280px; }
+      .actions .btn { min-width: 0; flex: 1 1 145px; }
+      .recap { padding: 19px 16px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .btn, .close-modal { transition: none; }
+    }
+
+  </style>
+</head>
+<body>
+  <div class="intro-screen" id="introScreen" aria-hidden="true">
+    <div class="intro-title" aria-label="Topic and Presenter Picker">
+      <span class="intro-top">Topic &amp; Presenter Picker</span>
+      <span class="intro-bottom">Topic &amp; Presenter Picker</span>
+    </div>
+  </div>
+  <div class="winner-overlay" id="winnerOverlay" aria-live="assertive" aria-atomic="true">
+    <div class="winner-content">
+      <div class="winner-label" id="winnerLabel">The chosen topic</div>
+      <div class="winner-name" id="winnerName"></div>
+    </div>
+  </div>
+  <div class="page">
+    <header>
+      <div class="eyebrow">A little bit of chance</div>
+      <h1>Topic &amp; Presenter Picker</h1>
+      <p>One topic. One presenter. No overthinking.</p>
+      <div class="top-actions">
+        <button class="btn btn-primary" id="openTopics" type="button">ï¼‹ Add topics</button>
+        <button class="btn btn-pink" id="openPresenters" type="button">ï¼‹ Add presenters</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="panel stage" aria-live="polite">
+        <div class="stage-top">
+          <h2 id="stageTitle">First, pick a topic</h2>
+        </div>
+        <div class="picker-window">
+          <div class="picker-kicker" id="pickerKicker">The topic is...</div>
+          <div class="rolling-name" id="rollingName">Ready when you are</div>
+          <div class="picker-hint" id="pickerHint">Add your topics and let chance do the rest.</div>
+        </div>
+        <div class="result-note" id="resultNote"></div>
+        <div class="actions">
+          <button id="spinBtn" class="btn btn-primary" type="button">Choose a topic</button>
+          <button id="nextRoundBtn" class="btn btn-pink hidden" type="button">Pick another topic</button>
+        </div>
+        <div class="recap hidden" id="recap">
+          <div class="recap-label">This round</div>
+          <strong id="recapTopic"></strong>
+          <span>presented by</span>
+          <strong id="recapPresenter"></strong>
+        </div>
+      </section>
+
+
+    </main>
+
+    <div class="modal-backdrop hidden" id="topicsModal" role="dialog" aria-modal="true" aria-labelledby="topicsModalTitle">
+      <section class="modal panel">
+        <div class="modal-heading">
+          <div><div class="eyebrow">Your list</div><h2 id="topicsModalTitle">Manage topics</h2></div>
+          <button class="close-modal" type="button" data-close="topicsModal" aria-label="Close topics">Ã—</button>
+        </div>
+        <form class="add" id="topicForm">
+          <input id="topicInput" placeholder="Add a topic..." maxlength="80" aria-label="New topic" autocomplete="off">
+          <button class="btn btn-primary" type="submit">Add</button>
+        </form>
+        <p class="err" id="topicErr" role="status"></p>
+        <div class="modal-list-heading"><h3>Available topics</h3><span class="count" id="topicCount">0 topics</span></div>
+        <ul class="item-list" id="topicList"></ul>
+      </section>
+    </div>
+
+    <div class="modal-backdrop hidden" id="presentersModal" role="dialog" aria-modal="true" aria-labelledby="presentersModalTitle">
+      <section class="modal panel">
+        <div class="modal-heading">
+          <div><div class="eyebrow">Your list</div><h2 id="presentersModalTitle">Manage presenters</h2></div>
+          <button class="close-modal" type="button" data-close="presentersModal" aria-label="Close presenters">Ã—</button>
+        </div>
+        <form class="add" id="presForm">
+          <input id="presInput" placeholder="Add a name..." maxlength="80" aria-label="New presenter" autocomplete="off">
+          <button class="btn btn-primary" type="submit">Add</button>
+        </form>
+        <p class="err" id="presErr" role="status"></p>
+        <label class="option"><input type="checkbox" id="removePres"> <span>Remove a presenter from the list after they're chosen</span></label>
+        <div class="modal-list-heading"><h3>Available presenters</h3><span class="count" id="presCount">0 people</span></div>
+        <ul class="item-list" id="presList"></ul>
+      </section>
+    </div>
+
+  </div>
+  <script src="./app.js" defer></script>
+</body>
+</html>
+
