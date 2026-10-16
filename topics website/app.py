@@ -84,7 +84,7 @@ def register(table):
 
 register("topics")
 register("presenters")
-
+init_db()
 
 @app.post("/api/topics/spin")
 def spin_topic():
